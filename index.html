@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Echo Live Transcribe - Phonetic-Literal Speech-to-Text</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1a1a3a 100%);
+      color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      padding: 2rem 1.5rem;
+    }
+    header {
+      margin-bottom: 2rem;
+    }
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 2rem;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    p.note {
+      margin: 0;
+      font-size: 0.95rem;
+      color: #9ca3af;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    button {
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.7rem 1.2rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: #1f2937;
+      color: #e5e7eb;
+      transition: all 0.2s ease;
+      border: 1px solid #374151;
+    }
+    button:hover:not(:disabled) {
+      background: #2d3748;
+      border-color: #4b5563;
+      transform: translateY(-2px);
+    }
+    button.primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-color: #1d4ed8;
+      color: #fff;
+    }
+    button.primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+    button.danger {
+      background: #dc2626;
+      border-color: #991b1b;
+      color: #fff;
+    }
+    button.danger:hover:not(:disabled) {
+      background: #b91c1c;
+    }
+    button.secondary {
+      background: #374151;
+      border-color: #4b5563;
+    }
+    button.success {
+      background: #059669;
+      border-color: #047857;
+      color: #fff;
+    }
+    button.success:hover:not(:disabled) {
+      background: #047857;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status-container {
+      margin-bottom: 1rem;
+    }
+    .status {
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      background: #1f2937;
+      border-left: 4px solid #2563eb;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .status.listening {
+      border-left-color: #22c55e;
+      background: #064e3b;
+    }
+    .status.error {
+      border-left-color: #dc2626;
+      background: #7f1d1d;
+    }
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #2563eb;
+      animation: pulse 1.5s infinite;
+    }
+    .status.listening .status-indicator {
+      background: #22c55e;
+    }
+    .status.error .status-indicator {
+      background: #dc2626;
+      animation: none;
+    }
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.4;
+      }
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-box {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 0.25rem;
+    }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #60a5fa;
+    }
+    .transcript-section {
+      margin-bottom: 1.5rem;
+    }
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #d1d5db;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .transcript-wrapper {
+      border-radius: 0.5rem;
+      background: #020617;
+      border: 1px solid #1f2937;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      flex-direction: column;
+    }
+    textarea {
+      width: 100%;
+      border: none;
+      outline: none;
+      resize: vertical;
+      min-height: 140px;
+      background: transparent;
+      color: #e5e7eb;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      font-family: 'Courier New', monospace;
+      margin-bottom: 0.5rem;
+    }
+    textarea::placeholder {
+      color: #4b5563;
+    }
+    textarea:focus {
+      outline: 1px solid #2563eb;
+      padding: 0.25rem;
+      margin: -0.25rem;
+    }
+    .interim {
+      font-size: 0.9rem;
+      color: #60a5fa;
+      font-style: italic;
+      border-top: 1px solid #1f2937;
+      padding-top: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .interim:empty {
+      display: none;
+    }
+    .export-section {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .export-title {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: #d1d5db;
+    }
+    .export-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.5rem;
+    }
+    .export-btn {
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+    }
+    .footer-note {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #6b7280;
+      padding: 0.75rem;
+      background: #1f2937;
+      border-radius: 0.5rem;
+      border-left: 3px solid #2563eb;
+    }
+    .hidden {
+      display: none;
+    }
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+      .container {
+        padding: 1rem;
+      }
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+      textarea {
+        font-size: 0.9rem;
+        min-height: 120px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎙️ Echo Live Transcribe</h1>
+      <p class="note">
+        Browser-based speech-to-text with phonetic transcription. Chrome/Chromium only. 
+        Microphone required.
+      </p>
+    </header>
+
+    <div class="controls">
+      <button id="startBtn" class="primary">🎤 Start Listening</button>
+      <button id="stopBtn" class="danger" disabled>⏹️ Stop</button>
+      <button id="pauseBtn" class="secondary" disabled>⏸️ Pause</button>
+      <button id="copyBtn" class="secondary">📋 Copy</button>
+      <button id="clearBtn" class="secondary">🗑️ Clear</button>
+    </div>
+
+    <div class="status-container">
+      <div class="status" id="status">
+        <span class="status-indicator"></span>
+        <span id="statusText">Idle. Click "Start Listening" to begin.</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-label">Words</div>
+        <div class="stat-value" id="wordCount">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Characters</div>
+        <div class="stat-value" id="charCount">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Phonetic Chars</div>
+        <div class="stat-value" id="phoneticCharCount">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Duration</div>
+        <div class="stat-value" id="duration">00:00</div>
+      </div>
+    </div>
+
+    <div class="transcript-section">
+      <div class="section-title">📝 Literal Transcript</div>
+      <div class="transcript-wrapper">
+        <textarea id="literalTranscript" placeholder="Your literal transcript will appear here..." spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <div class="transcript-section">
+      <div class="section-title">🔤 Phonetic-Literal Transcript (IPA)</div>
+      <div class="transcript-wrapper">
+        <textarea id="phoneticTranscript" placeholder="Your phonetic transcript will appear here..." spellcheck="false"></textarea>
+        <div class="interim" id="interimText"></div>
+      </div>
+    </div>
+
+    <div class="export-section">
+      <div class="export-title">💾 Export Transcript</div>
+      <div class="export-controls">
+        <button id="exportTxtBtn" class="success export-btn">Export TXT</button>
+        <button id="exportJsonBtn" class="success export-btn">Export JSON</button>
+        <button id="exportCsvBtn" class="success export-btn">Export CSV</button>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      💡 <strong>Tip:</strong> Speak clearly into your microphone. Both literal and phonetic transcripts update in real-time. 
+      Export your transcript at any time.
+    </div>
+  </div>
+
+  <script>
+    // ===== PHONETIC CONVERSION SYSTEM =====
+    class PhoneticConverter {
+      constructor() {
+        // Comprehensive IPA mapping for English phonetics
+        this.phonemeMap = {
+          // Consonant clusters (must come before single letters)
+          'th': 'θ',
+          'dh': 'ð',
+          'sh': 'ʃ',
+          'zh': 'ʒ',
+          'ch': 'tʃ',
+          'j': 'dʒ',
+          'ng': 'ŋ',
+          'wh': 'ʍ',
+          
+          // Vowel diphthongs
+          'ai': 'aɪ',
+          'ay': 'eɪ',
+          'oi': 'ɔɪ',
+          'oy': 'ɔɪ',
+          'ow': 'oʊ',
+          'ou': 'aʊ',
+          'ew': 'juː',
+          'ue': 'uː',
+          
+          // Vowels
+          'a': 'æ',
+          'e': 'ɛ',
+          'i': 'ɪ',
+          'o': 'ɑ',
+          'u': 'ʌ',
+          'y': 'j',
+          
+          // Consonants
+          'b': 'b',
+          'c': 'k',
+          'd': 'd',
+          'f': 'f',
+          'g': 'ɡ',
+          'h': 'h',
+          'k': 'k',
+          'l': 'l',
+          'm': 'm',
+          'n': 'n',
+          'p': 'p',
+          'q': 'k',
+          'r': 'ɹ',
+          's': 's',
+          't': 't',
+          'v': 'v',
+          'w': 'w',
+          'x': 'ks',
+          'z': 'z'
+        };
+      }
+
+      toPhonetic(text) {
+        if (!text) return '';
+        let t = text.toLowerCase().trim();
+        
+        // Remove punctuation but keep spaces
+        t = t.replace(/[^\w\s]/g, '');
+        
+        let result = '';
+        let i = 0;
+        
+        while (i < t.length) {
+          // Check for two-character sequences first
+          if (i < t.length - 1) {
+            const twoChar = t[i] + t[i + 1];
+            if (this.phonemeMap.hasOwnProperty(twoChar)) {
+              result += this.phonemeMap[twoChar];
+              i += 2;
+              continue;
+            }
+          }
+          
+          // Check single character
+          const char = t[i];
+          if (this.phonemeMap.hasOwnProperty(char)) {
+            result += this.phonemeMap[char];
+          } else if (char === ' ') {
+            result += ' ';
+          } else {
+            result += char;
+          }
+          i++;
+        }
+        
+        return result.replace(/\s+/g, ' ').trim();
+      }
+    }
+
+    // ===== DOM ELEMENTS =====
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    
+    const statusEl = document.getElementById('status');
+    const statusText = document.getElementById('statusText');
+    
+    const literalTranscriptEl = document.getElementById('literalTranscript');
+    const phoneticTranscriptEl = document.getElementById('phoneticTranscript');
+    const interimEl = document.getElementById('interimText');
+    
+    const wordCountEl = document.getElementById('wordCount');
+    const charCountEl = document.getElementById('charCount');
+    const phoneticCharCountEl = document.getElementById('phoneticCharCount');
+    const durationEl = document.getElementById('duration');
+    
+    const exportTxtBtn = document.getElementById('exportTxtBtn');
+    const exportJsonBtn = document.getElementById('exportJsonBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+
+    // ===== STATE =====
+    let recognition = null;
+    let listening = false;
+    let paused = false;
+    let finalTranscript = '';
+    let startTime = null;
+    let durationInterval = null;
+    const converter = new PhoneticConverter();
+
+    // ===== STATUS UPDATES =====
+    function updateStatus(message, type = 'idle') {
+      statusText.textContent = message;
+      statusEl.className = 'status ' + type;
+    }
+
+    function updateStats() {
+      const literal = literalTranscriptEl.value.trim();
+      const phonetic = phoneticTranscriptEl.value.trim();
+      
+      wordCountEl.textContent = literal.split(/\s+/).filter(w => w).length;
+      charCountEl.textContent = literal.length;
+      phoneticCharCountEl.textContent = phonetic.length;
+    }
+
+    function startDurationTimer() {
+      startTime = Date.now();
+      durationInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        durationEl.textContent = 
+          String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      }, 100);
+    }
+
+    function stopDurationTimer() {
+      if (durationInterval) {
+        clearInterval(durationInterval);
+        durationInterval = null;
+      }
+    }
+
+    // ===== SPEECH RECOGNITION SETUP =====
+    function initRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        updateStatus('❌ Web Speech API not supported. Use Chrome/Chromium.', 'error');
+        startBtn.disabled = true;
+        return false;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        listening = true;
+        paused = false;
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        pauseBtn.disabled = false;
+        updateStatus('🎤 Listening...', 'listening');
+        startDurationTimer();
+      };
+
+      recognition.onend = () => {
+        listening = false;
+        stopBtn.disabled = true;
+        pauseBtn.disabled = true;
+        startBtn.disabled = false;
+        updateStatus('⏸️ Stopped', 'idle');
+        interimEl.textContent = '';
+        stopDurationTimer();
+      };
+
+      recognition.onerror = (event) => {
+        let msg = '❌ Error: ' + (event.error || 'unknown');
+        let type = 'error';
+        
+        if (event.error === 'not-allowed') {
+          msg = '❌ Microphone access denied. Allow permission in browser settings.';
+        } else if (event.error === 'network') {
+          msg = '❌ Network error. Web Speech API temporarily unavailable.';
+        } else if (event.error === 'no-speech') {
+          msg = '⚠️ No speech detected. Speak clearly.';
+          type = 'idle';
+        } else if (event.error === 'audio-capture') {
+          msg = '❌ No microphone found. Check your audio device.';
+        }
+        
+        updateStatus(msg, type);
+        console.error('Speech recognition error:', event.error);
+      };
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        let finalChunk = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          
+          if (event.results[i].isFinal) {
+            finalChunk += transcript + ' ';
+          } else {
+            interim += transcript;
+          }
+        }
+
+        if (finalChunk) {
+          finalTranscript += finalChunk;
+          literalTranscriptEl.value = finalTranscript.trim();
+          const phonetic = converter.toPhonetic(finalTranscript);
+          phoneticTranscriptEl.value = phonetic;
+          updateStats();
+        }
+
+        if (interim) {
+          const phoneticInterim = converter.toPhonetic(interim);
+          interimEl.textContent = '▸ ' + phoneticInterim;
+        } else {
+          interimEl.textContent = '';
+        }
+      };
+
+      return true;
+    }
+
+    // ===== EVENT LISTENERS =====
+    startBtn.addEventListener('click', () => {
+      if (!recognition) {
+        if (!initRecognition()) return;
+      }
+      try {
+        recognition.start();
+      } catch (e) {
+        console.log('Recognition already starting');
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (recognition) {
+        recognition.stop();
+      }
+      interimEl.textContent = '';
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (recognition) {
+        if (!paused) {
+          recognition.stop();
+          paused = true;
+          pauseBtn.textContent = '▶️ Resume';
+          updateStatus('⏸️ Paused', 'idle');
+          stopDurationTimer();
+        } else {
+          paused = false;
+          pauseBtn.textContent = '⏸️ Pause';
+          startDurationTimer();
+          try {
+            recognition.start();
+          } catch (e) {
+            console.log('Recognition already starting');
+          }
+        }
+      }
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      const literal = literalTranscriptEl.value.trim();
+      const phonetic = phoneticTranscriptEl.value.trim();
+      const text = literal || phonetic;
+      
+      if (!text) {
+        updateStatus('⚠️ Nothing to copy', 'idle');
+        return;
+      }
+      
+      try {
+        await navigator.clipboard.writeText(text);
+        updateStatus('✅ Copied to clipboard', 'idle');
+        setTimeout(() => updateStatus('Idle. Click "Start Listening" to begin.'), 2000);
+      } catch (e) {
+        updateStatus('❌ Clipboard access denied', 'error');
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Clear all transcripts? This cannot be undone.')) {
+        finalTranscript = '';
+        literalTranscriptEl.value = '';
+        phoneticTranscriptEl.value = '';
+        interimEl.textContent = '';
+        durationEl.textContent = '00:00';
+        updateStats();
+        updateStatus('✅ Cleared', 'idle');
+      }
+    });
+
+    // ===== EXPORT FUNCTIONS =====
+    function generateTimestamp() {
+      return new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    }
+
+    function downloadFile(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      updateStatus('✅ Export complete', 'idle');
+      setTimeout(() => updateStatus('Idle. Click "Start Listening" to begin.'), 2000);
+    }
+
+    exportTxtBtn.addEventListener('click', () => {
+      const literal = literalTranscriptEl.value;
+      const phonetic = phoneticTranscriptEl.value;
+      
+      if (!literal && !phonetic) {
+        updateStatus('⚠️ Nothing to export', 'idle');
+        return;
+      }
+      
+      const content = `ECHO LIVE TRANSCRIBE - EXPORT
+Generated: ${new Date().toLocaleString()}
+Duration: ${durationEl.textContent}
+
+LITERAL TRANSCRIPT:
+${literal}
+
+PHONETIC-LITERAL TRANSCRIPT (IPA):
+${phonetic}
+`;
+      
+      downloadFile(content, `echo-transcribe-${generateTimestamp()}.txt`, 'text/plain');
+    });
+
+    exportJsonBtn.addEventListener('click', () => {
+      const literal = literalTranscriptEl.value;
+      const phonetic = phoneticTranscriptEl.value;
+      
+      if (!literal && !phonetic) {
+        updateStatus('⚠️ Nothing to export', 'idle');
+        return;
+      }
+      
+      const data = {
+        metadata: {
+          generated: new Date().toISOString(),
+          duration: durationEl.textContent,
+          wordCount: wordCountEl.textContent,
+          characterCount: charCountEl.textContent
+        },
+        transcripts: {
+          literal: literal,
+          phonetic: phonetic
+        }
+      };
+      
+      const content = JSON.stringify(data, null, 2);
+      downloadFile(content, `echo-transcribe-${generateTimestamp()}.json`, 'application/json');
+    });
+
+    exportCsvBtn.addEventListener('click', () => {
+      const literal = literalTranscriptEl.value;
+      const phonetic = phoneticTranscriptEl.value;
+      
+      if (!literal && !phonetic) {
+        updateStatus('⚠️ Nothing to export', 'idle');
+        return;
+      }
+      
+      // CSV format: word,phonetic,charCount
+      const literalWords = literal.split(/\s+/).filter(w => w);
+      const phoneticWords = phonetic.split(/\s+/).filter(w => w);
+      
+      let csv = 'Literal Word,Phonetic Word,Duration,Word Count,Total Characters\n';
+      
+      for (let i = 0; i < Math.max(literalWords.length, phoneticWords.length); i++) {
+        const lit = literalWords[i] || '';
+        const phon = phoneticWords[i] || '';
+        csv += `"${lit}","${phon}","${durationEl.textContent}","${wordCountEl.textContent}","${charCountEl.textContent}"\n`;
+      }
+      
+      downloadFile(csv, `echo-transcribe-${generateTimestamp()}.csv`, 'text/csv');
+    });
+
+    // ===== INITIALIZATION =====
+    updateStatus('Idle. Click "Start Listening" to begin.', 'idle');
+  </script>
+</body>
+</html>
