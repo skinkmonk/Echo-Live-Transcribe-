@@ -9,7 +9,7 @@ A **browser-based speech-to-text transcriber** with **real-time phonetic (IPA) c
 - 🎤 **Live microphone input** with real-time transcription
 - 🔤 **Dual transcripts**: Literal English + IPA phonetic conversion
 - 📊 **Live statistics**: Word count, character count, duration tracking
-- 💾 **Multiple export formats**: TXT, JSON, CSV
+- 💾 **Multiple export formats**: TXT, JSON, CSV, **PDF**
 - 🎨 **Dark theme UI** with gradient accents
 - ⏸️ **Pause/resume** functionality for interrupted speech
 - 📱 **Responsive design** (desktop & mobile-friendly)
@@ -21,7 +21,7 @@ A **browser-based speech-to-text transcriber** with **real-time phonetic (IPA) c
 2. **Allow microphone access** when prompted by your browser
 3. **Click "Start Listening"** and speak clearly
 4. **Watch both transcripts update** in real-time
-5. **Export** when done (TXT, JSON, or CSV)
+5. **Export** when done (TXT, JSON, CSV, or PDF)
 
 ## 📋 Supported Browsers
 
@@ -71,6 +71,9 @@ Structured data with metadata:
 ### CSV Export
 Spreadsheet-friendly format with word-by-word phonetic mapping.
 
+### PDF Export
+**Professional PDF document** with formatted header, statistics table, and both literal and phonetic transcripts. Perfect for academic research, language learning, and professional speech analysis.
+
 ## 🛠️ Installation & Development
 
 ### Clone the Repository
@@ -118,6 +121,7 @@ This repo is **already configured for GitHub Pages** using the `main` branch.
 - Clear browser cache
 - Try a different browser (still Chrome-based)
 - Check available disk space
+- For PDF: Ensure JavaScript is enabled
 
 ## 🏗️ Architecture
 
@@ -130,7 +134,7 @@ index.html (single-file app)
     ├── Speech Recognition API integration
     ├── Real-time transcript update system
     ├── Statistics tracker
-    └── Export utilities (TXT/JSON/CSV)
+    └── Export utilities (TXT/JSON/CSV/PDF)
 ```
 
 ## 📈 Tech Stack
@@ -138,7 +142,7 @@ index.html (single-file app)
 - **Frontend**: Vanilla HTML5, CSS3, JavaScript (ES6+)
 - **Speech Recognition**: Web Speech API (Chrome)
 - **Phonetic Engine**: Custom IPA character mapping
-- **Export**: Blob + File Download API
+- **PDF Export**: html2pdf.js library (CDN)
 - **Hosting**: GitHub Pages
 
 ## 🎓 IPA Reference
@@ -182,6 +186,7 @@ MIT License - feel free to use, modify, and distribute.
 - [Web Speech API Docs](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
 - [IPA Chart](https://www.internationalphoneticassociation.org/IPAcharts/IPA_chart_consonants/chart_consonants_2020.html)
 - [GitHub Pages Docs](https://docs.github.com/en/pages)
+- [html2pdf.js Documentation](https://ekoopmans.github.io/html2pdf.js/)
 
 ---
 
