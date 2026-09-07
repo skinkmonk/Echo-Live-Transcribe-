@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Echo Live Transcribe - Phonetic-Literal Speech-to-Text</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -252,6 +253,74 @@
     .hidden {
       display: none;
     }
+    #pdfContent {
+      display: none;
+    }
+    .pdf-header {
+      color: #1f2937;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .pdf-header h1 {
+      color: #2563eb;
+      -webkit-text-fill-color: unset;
+      background: none;
+      background-clip: unset;
+      margin: 0 0 0.5rem;
+    }
+    .pdf-header p {
+      color: #4b5563;
+      margin: 0;
+    }
+    .pdf-metadata {
+      color: #4b5563;
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid #d1d5db;
+      padding-bottom: 1rem;
+    }
+    .pdf-section {
+      margin-bottom: 1.5rem;
+      color: #1f2937;
+    }
+    .pdf-section h2 {
+      color: #1e40af;
+      font-size: 1.2rem;
+      margin: 0 0 0.5rem;
+      border-bottom: 2px solid #bfdbfe;
+      padding-bottom: 0.5rem;
+    }
+    .pdf-section p {
+      color: #374151;
+      margin: 0.5rem 0;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+    .pdf-stats {
+      display: table;
+      width: 100%;
+      margin-bottom: 1rem;
+      border-collapse: collapse;
+    }
+    .pdf-stat-row {
+      display: table-row;
+    }
+    .pdf-stat-label {
+      display: table-cell;
+      padding: 0.5rem;
+      background: #e0e7ff;
+      border: 1px solid #bfdbfe;
+      font-weight: 600;
+      color: #1e40af;
+      width: 30%;
+    }
+    .pdf-stat-value {
+      display: table-cell;
+      padding: 0.5rem;
+      background: #f0f9ff;
+      border: 1px solid #bfdbfe;
+      color: #1f2937;
+    }
     @media (max-width: 600px) {
       h1 {
         font-size: 1.5rem;
@@ -334,12 +403,54 @@
         <button id="exportTxtBtn" class="success export-btn">Export TXT</button>
         <button id="exportJsonBtn" class="success export-btn">Export JSON</button>
         <button id="exportCsvBtn" class="success export-btn">Export CSV</button>
+        <button id="exportPdfBtn" class="success export-btn">Export PDF</button>
       </div>
     </div>
 
     <div class="footer-note">
       💡 <strong>Tip:</strong> Speak clearly into your microphone. Both literal and phonetic transcripts update in real-time. 
       Export your transcript at any time.
+    </div>
+  </div>
+
+  <!-- Hidden PDF content container -->
+  <div id="pdfContent">
+    <div class="pdf-header">
+      <h1>Echo Live Transcribe</h1>
+      <p>Phonetic-Literal Speech-to-Text Export</p>
+    </div>
+
+    <div class="pdf-metadata">
+      <p><strong>Generated:</strong> <span id="pdfDate"></span></p>
+      <p><strong>Duration:</strong> <span id="pdfDuration"></span></p>
+    </div>
+
+    <div class="pdf-section">
+      <h2>📊 Statistics</h2>
+      <div class="pdf-stats">
+        <div class="pdf-stat-row">
+          <div class="pdf-stat-label">Words</div>
+          <div class="pdf-stat-value"><span id="pdfWordCount"></span></div>
+        </div>
+        <div class="pdf-stat-row">
+          <div class="pdf-stat-label">Characters</div>
+          <div class="pdf-stat-value"><span id="pdfCharCount"></span></div>
+        </div>
+        <div class="pdf-stat-row">
+          <div class="pdf-stat-label">Phonetic Characters</div>
+          <div class="pdf-stat-value"><span id="pdfPhoneticCharCount"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pdf-section">
+      <h2>📝 Literal Transcript</h2>
+      <p id="pdfLiteralText"></p>
+    </div>
+
+    <div class="pdf-section">
+      <h2>🔤 Phonetic-Literal Transcript (IPA)</h2>
+      <p id="pdfPhoneticText"></p>
     </div>
   </div>
 
@@ -459,6 +570,7 @@
     const exportTxtBtn = document.getElementById('exportTxtBtn');
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
 
     // ===== STATE =====
     let recognition = null;
@@ -751,6 +863,40 @@ ${phonetic}
       }
       
       downloadFile(csv, `echo-transcribe-${generateTimestamp()}.csv`, 'text/csv');
+    });
+
+    exportPdfBtn.addEventListener('click', () => {
+      const literal = literalTranscriptEl.value;
+      const phonetic = phoneticTranscriptEl.value;
+      
+      if (!literal && !phonetic) {
+        updateStatus('⚠️ Nothing to export', 'idle');
+        return;
+      }
+      
+      // Populate PDF content
+      document.getElementById('pdfDate').textContent = new Date().toLocaleString();
+      document.getElementById('pdfDuration').textContent = durationEl.textContent;
+      document.getElementById('pdfWordCount').textContent = wordCountEl.textContent;
+      document.getElementById('pdfCharCount').textContent = charCountEl.textContent;
+      document.getElementById('pdfPhoneticCharCount').textContent = phoneticCharCountEl.textContent;
+      document.getElementById('pdfLiteralText').textContent = literal || '(empty)';
+      document.getElementById('pdfPhoneticText').textContent = phonetic || '(empty)';
+      
+      // Generate PDF
+      const element = document.getElementById('pdfContent');
+      const opt = {
+        margin: 10,
+        filename: `echo-transcribe-${generateTimestamp()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+        pagebreak: { avoid: ['tr'] }
+      };
+      
+      html2pdf().set(opt).from(element).save();
+      updateStatus('✅ PDF export complete', 'idle');
+      setTimeout(() => updateStatus('Idle. Click "Start Listening" to begin.'), 2000);
     });
 
     // ===== INITIALIZATION =====
