@@ -225,7 +225,7 @@
   <div class="container">
     <header>
       <h1>🎙️ Echo Live Transcribe</h1>
-      <p class="note">Speak clearly into your microphone. Keeps listening until you hit STOP.</p>
+      <p class="note">Continuous speech-to-text. Speaks as you speak.</p>
     </header>
 
     <div class="controls">
@@ -256,7 +256,7 @@
     </div>
 
     <div class="footer-note">
-      💡 Press STOP button to finish transcribing.
+      💡 Press STOP button to finish transcribing. Restarts automatically if connection drops.
     </div>
   </div>
 
@@ -277,9 +277,8 @@
 
     // ===== STATE =====
     let recognition = null;
-    let listening = false;
+    let isListening = false;
     let finalTranscript = '';
-    let shouldRestart = false;
 
     // ===== STATUS UPDATES =====
     function updateStatus(message, type = 'idle') {
@@ -299,60 +298,70 @@
 
       recognition = new SpeechRecognition();
       recognition.continuous = true;
-      recognition.interimResults = false;
+      recognition.interimResults = true;
       recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
-        listening = true;
+        isListening = true;
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        updateStatus('🎤 Listening... Speak now', 'listening');
+        updateStatus('🎤 Listening... Keep speaking', 'listening');
       };
 
       recognition.onend = () => {
-        listening = false;
-        
-        // If user clicked stop, don't restart
-        if (!shouldRestart) {
-          stopBtn.disabled = true;
-          startBtn.disabled = false;
-          updateStatus('⏹️ Stopped', 'idle');
-        } else {
-          // Auto-restart if still listening
+        // Auto-restart if still supposed to be listening
+        if (isListening) {
           try {
             recognition.start();
           } catch (e) {
-            console.log('Will restart recognition');
+            console.log('Restarting recognition...');
+            setTimeout(() => {
+              try {
+                recognition.start();
+              } catch (err) {
+                console.log('Failed to restart');
+              }
+            }, 100);
           }
         }
       };
 
       recognition.onerror = (event) => {
-        let msg = '❌ Error: ' + (event.error || 'unknown');
-        
-        if (event.error === 'not-allowed') {
-          msg = '❌ Microphone denied - Check browser permissions';
-        } else if (event.error === 'network') {
-          msg = '❌ Network error - Try again';
-        } else if (event.error === 'no-speech') {
-          msg = '🎤 Listening... (no speech detected)';
+        if (event.error === 'no-speech' || event.error === 'audio-capture') {
+          // Keep listening for these errors
+          if (isListening) {
+            updateStatus('🎤 Listening... Speak louder', 'listening');
+          }
+        } else if (event.error === 'not-allowed') {
+          updateStatus('❌ Microphone denied - Check permissions', 'error');
+          isListening = false;
+          stopBtn.disabled = true;
+          startBtn.disabled = false;
+        } else {
+          console.error('Speech recognition error:', event.error);
         }
-        
-        updateStatus(msg, event.error === 'no-speech' ? 'listening' : 'error');
       };
 
       recognition.onresult = (event) => {
-        let transcript = '';
+        let interimTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          
           if (event.results[i].isFinal) {
-            transcript += event.results[i][0].transcript + ' ';
+            finalTranscript += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
           }
         }
 
-        if (transcript) {
-          finalTranscript += transcript;
-          transcriptEl.value = finalTranscript.trim();
+        // Update textarea with final results
+        transcriptEl.value = (finalTranscript + interimTranscript).trim();
+        
+        // Store final when recognition ends
+        if (event.isFinal) {
+          finalTranscript += interimTranscript + ' ';
         }
       };
 
@@ -364,19 +373,26 @@
       if (!recognition) {
         if (!initRecognition()) return;
       }
-      shouldRestart = true;
+      
+      finalTranscript = '';
+      isListening = true;
+      
       try {
         recognition.start();
       } catch (e) {
-        console.log('Recognition already starting');
+        console.log('Recognition already started');
       }
     });
 
     stopBtn.addEventListener('click', () => {
-      shouldRestart = false;
+      isListening = false;
       if (recognition) {
         recognition.stop();
       }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      updateStatus('⏹️ Stopped', 'idle');
+      finalTranscript = transcriptEl.value;
     });
 
     copyBtn.addEventListener('click', async () => {
@@ -390,7 +406,11 @@
       try {
         await navigator.clipboard.writeText(text);
         updateStatus('✅ Copied to clipboard', 'idle');
-        setTimeout(() => updateStatus('Ready to transcribe', 'idle'), 2000);
+        setTimeout(() => {
+          if (isListening) {
+            updateStatus('🎤 Listening... Keep speaking', 'listening');
+          }
+        }, 2000);
       } catch (e) {
         updateStatus('❌ Copy failed', 'error');
       }
@@ -420,7 +440,11 @@
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       updateStatus('✅ Downloaded', 'idle');
-      setTimeout(() => updateStatus('Ready to transcribe', 'idle'), 2000);
+      setTimeout(() => {
+        if (isListening) {
+          updateStatus('🎤 Listening... Keep speaking', 'listening');
+        }
+      }, 2000);
     }
 
     exportTxtBtn.addEventListener('click', () => {
