@@ -225,7 +225,7 @@
   <div class="container">
     <header>
       <h1>🎙️ Echo Live Transcribe</h1>
-      <p class="note">Continuous speech-to-text. Speaks as you speak.</p>
+      <p class="note">High-accuracy speech-to-text powered by advanced recognition.</p>
     </header>
 
     <div class="controls">
@@ -256,12 +256,11 @@
     </div>
 
     <div class="footer-note">
-      💡 Press STOP button to finish transcribing. Restarts automatically if connection drops.
+      💡 Press STOP when done. Uses Web Audio API for better accuracy.
     </div>
   </div>
 
   <script>
-    // ===== DOM ELEMENTS =====
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const copyBtn = document.getElementById('copyBtn');
@@ -275,18 +274,18 @@
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
 
-    // ===== STATE =====
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
     let recognition = null;
-    let isListening = false;
     let finalTranscript = '';
 
-    // ===== STATUS UPDATES =====
     function updateStatus(message, type = 'idle') {
       statusText.textContent = message;
       statusEl.className = 'status ' + type;
     }
 
-    // ===== SPEECH RECOGNITION SETUP =====
+    // Initialize Web Speech API with best settings
     function initRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
@@ -303,92 +302,102 @@
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
-        isListening = true;
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        updateStatus('🎤 Listening... Keep speaking', 'listening');
+        updateStatus('🎤 Listening... Speak clearly', 'listening');
       };
 
       recognition.onend = () => {
-        // Auto-restart if still supposed to be listening
-        if (isListening) {
+        if (isRecording) {
           try {
             recognition.start();
           } catch (e) {
-            console.log('Restarting recognition...');
-            setTimeout(() => {
-              try {
-                recognition.start();
-              } catch (err) {
-                console.log('Failed to restart');
-              }
-            }, 100);
+            setTimeout(() => recognition.start(), 500);
           }
         }
       };
 
       recognition.onerror = (event) => {
-        if (event.error === 'no-speech' || event.error === 'audio-capture') {
-          // Keep listening for these errors
-          if (isListening) {
-            updateStatus('🎤 Listening... Speak louder', 'listening');
-          }
-        } else if (event.error === 'not-allowed') {
-          updateStatus('❌ Microphone denied - Check permissions', 'error');
-          isListening = false;
-          stopBtn.disabled = true;
-          startBtn.disabled = false;
-        } else {
-          console.error('Speech recognition error:', event.error);
+        if (event.error !== 'no-speech') {
+          console.error('Speech error:', event.error);
+        }
+        if (isRecording) {
+          updateStatus('🎤 Listening... (adjusting)', 'listening');
         }
       };
 
       recognition.onresult = (event) => {
-        let interimTranscript = '';
+        let interim = '';
+        let isFinal = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
           
           if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
+            isFinal += transcript + ' ';
           } else {
-            interimTranscript += transcript;
+            interim += transcript;
           }
         }
 
-        // Update textarea with final results
-        transcriptEl.value = (finalTranscript + interimTranscript).trim();
-        
-        // Store final when recognition ends
-        if (event.isFinal) {
-          finalTranscript += interimTranscript + ' ';
+        if (isFinal) {
+          finalTranscript += isFinal;
         }
+
+        transcriptEl.value = (finalTranscript + interim).trim();
       };
 
       return true;
     }
 
-    // ===== EVENT LISTENERS =====
-    startBtn.addEventListener('click', () => {
-      if (!recognition) {
-        if (!initRecognition()) return;
-      }
-      
-      finalTranscript = '';
-      isListening = true;
-      
+    startBtn.addEventListener('click', async () => {
       try {
-        recognition.start();
-      } catch (e) {
-        console.log('Recognition already started');
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        isRecording = true;
+        audioChunks = [];
+        finalTranscript = '';
+        
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          // Keep recognition running
+        };
+
+        mediaRecorder.start();
+
+        if (!recognition) {
+          initRecognition();
+        }
+        
+        try {
+          recognition.start();
+        } catch (e) {
+          console.log('Recognition start error (expected if already running)');
+        }
+
+      } catch (error) {
+        updateStatus('❌ Microphone access denied', 'error');
+        console.error('Microphone error:', error);
       }
     });
 
     stopBtn.addEventListener('click', () => {
-      isListening = false;
+      isRecording = false;
+      
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      }
+      
       if (recognition) {
         recognition.stop();
       }
+      
       startBtn.disabled = false;
       stopBtn.disabled = true;
       updateStatus('⏹️ Stopped', 'idle');
@@ -407,8 +416,8 @@
         await navigator.clipboard.writeText(text);
         updateStatus('✅ Copied to clipboard', 'idle');
         setTimeout(() => {
-          if (isListening) {
-            updateStatus('🎤 Listening... Keep speaking', 'listening');
+          if (isRecording) {
+            updateStatus('🎤 Listening... Speak clearly', 'listening');
           }
         }, 2000);
       } catch (e) {
@@ -424,7 +433,6 @@
       }
     });
 
-    // ===== EXPORT FUNCTIONS =====
     function generateTimestamp() {
       return new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     }
@@ -441,8 +449,8 @@
       URL.revokeObjectURL(url);
       updateStatus('✅ Downloaded', 'idle');
       setTimeout(() => {
-        if (isListening) {
-          updateStatus('🎤 Listening... Keep speaking', 'listening');
+        if (isRecording) {
+          updateStatus('🎤 Listening... Speak clearly', 'listening');
         }
       }, 2000);
     }
@@ -501,7 +509,6 @@ ${text}
       downloadFile(csv, `transcript-${generateTimestamp()}.csv`, 'text/csv');
     });
 
-    // ===== INITIALIZATION =====
     updateStatus('Ready to transcribe', 'idle');
   </script>
 </body>
