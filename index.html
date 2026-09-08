@@ -146,14 +146,6 @@
     .transcript-section {
       margin-bottom: 1.5rem;
     }
-    .section-title {
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: #d1d5db;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
     .transcript-wrapper {
       border-radius: 0.5rem;
       background: #020617;
@@ -179,18 +171,6 @@
     }
     textarea:focus {
       outline: 1px solid #60a5fa;
-    }
-    .interim {
-      font-size: 1rem;
-      color: #60a5fa;
-      font-style: italic;
-      border-top: 1px solid #1f2937;
-      padding-top: 0.75rem;
-      margin-top: 0.75rem;
-      min-height: 24px;
-    }
-    .interim:empty {
-      display: none;
     }
     .export-section {
       background: #1f2937;
@@ -261,8 +241,9 @@
     </div>
 
     <div class="transcript-section">
-      <textarea id="transcript" placeholder="Your transcript will appear here..." spellcheck="false"></textarea>
-      <div class="interim" id="interimText"></div>
+      <div class="transcript-wrapper">
+        <textarea id="transcript" placeholder="Your transcript will appear here..." spellcheck="false"></textarea>
+      </div>
     </div>
 
     <div class="export-section">
@@ -275,7 +256,7 @@
     </div>
 
     <div class="footer-note">
-      💡 Speak clearly. Punctuation will be added automatically based on pauses in your speech.
+      💡 Speak clearly. Press STOP when done speaking.
     </div>
   </div>
 
@@ -289,7 +270,6 @@
     const statusEl = document.getElementById('status');
     const statusText = document.getElementById('statusText');
     const transcriptEl = document.getElementById('transcript');
-    const interimEl = document.getElementById('interimText');
     
     const exportTxtBtn = document.getElementById('exportTxtBtn');
     const exportJsonBtn = document.getElementById('exportJsonBtn');
@@ -299,16 +279,11 @@
     let recognition = null;
     let listening = false;
     let finalTranscript = '';
-    let startTime = null;
 
     // ===== STATUS UPDATES =====
     function updateStatus(message, type = 'idle') {
       statusText.textContent = message;
       statusEl.className = 'status ' + type;
-    }
-
-    function startDurationTimer() {
-      startTime = Date.now();
     }
 
     // ===== SPEECH RECOGNITION SETUP =====
@@ -322,8 +297,8 @@
       }
 
       recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognition.interimResults = false;
       recognition.lang = 'en-US';
 
       recognition.onstart = () => {
@@ -331,7 +306,6 @@
         startBtn.disabled = true;
         stopBtn.disabled = false;
         updateStatus('🎤 Listening... Speak now', 'listening');
-        startDurationTimer();
       };
 
       recognition.onend = () => {
@@ -339,7 +313,6 @@
         stopBtn.disabled = true;
         startBtn.disabled = false;
         updateStatus('⏹️ Stopped', 'idle');
-        interimEl.textContent = '';
       };
 
       recognition.onerror = (event) => {
@@ -357,29 +330,14 @@
       };
 
       recognition.onresult = (event) => {
-        let interim = '';
-        let finalChunk = '';
+        let transcript = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          
-          if (event.results[i].isFinal) {
-            finalChunk += transcript + ' ';
-          } else {
-            interim += transcript;
-          }
+          transcript += event.results[i][0].transcript + ' ';
         }
 
-        if (finalChunk) {
-          finalTranscript += finalChunk;
-          transcriptEl.value = finalTranscript.trim();
-        }
-
-        if (interim) {
-          interimEl.textContent = interim;
-        } else {
-          interimEl.textContent = '';
-        }
+        finalTranscript += transcript;
+        transcriptEl.value = finalTranscript.trim();
       };
 
       return true;
@@ -401,7 +359,6 @@
       if (recognition) {
         recognition.stop();
       }
-      interimEl.textContent = '';
     });
 
     copyBtn.addEventListener('click', async () => {
@@ -425,7 +382,6 @@
       if (confirm('Clear transcript?')) {
         finalTranscript = '';
         transcriptEl.value = '';
-        interimEl.textContent = '';
         updateStatus('✅ Cleared', 'idle');
       }
     });
