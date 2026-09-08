@@ -225,7 +225,7 @@
   <div class="container">
     <header>
       <h1>🎙️ Echo Live Transcribe</h1>
-      <p class="note">Speak clearly into your microphone. Real-time transcription.</p>
+      <p class="note">Speak clearly into your microphone. Keeps listening until you hit STOP.</p>
     </header>
 
     <div class="controls">
@@ -256,7 +256,7 @@
     </div>
 
     <div class="footer-note">
-      💡 Speak clearly. Press STOP when done speaking.
+      💡 Press STOP button to finish transcribing.
     </div>
   </div>
 
@@ -279,6 +279,7 @@
     let recognition = null;
     let listening = false;
     let finalTranscript = '';
+    let shouldRestart = false;
 
     // ===== STATUS UPDATES =====
     function updateStatus(message, type = 'idle') {
@@ -297,7 +298,7 @@
       }
 
       recognition = new SpeechRecognition();
-      recognition.continuous = false;
+      recognition.continuous = true;
       recognition.interimResults = false;
       recognition.lang = 'en-US';
 
@@ -310,9 +311,20 @@
 
       recognition.onend = () => {
         listening = false;
-        stopBtn.disabled = true;
-        startBtn.disabled = false;
-        updateStatus('⏹️ Stopped', 'idle');
+        
+        // If user clicked stop, don't restart
+        if (!shouldRestart) {
+          stopBtn.disabled = true;
+          startBtn.disabled = false;
+          updateStatus('⏹️ Stopped', 'idle');
+        } else {
+          // Auto-restart if still listening
+          try {
+            recognition.start();
+          } catch (e) {
+            console.log('Will restart recognition');
+          }
+        }
       };
 
       recognition.onerror = (event) => {
@@ -323,21 +335,25 @@
         } else if (event.error === 'network') {
           msg = '❌ Network error - Try again';
         } else if (event.error === 'no-speech') {
-          msg = '⚠️ No speech detected - Speak louder';
+          msg = '🎤 Listening... (no speech detected)';
         }
         
-        updateStatus(msg, 'error');
+        updateStatus(msg, event.error === 'no-speech' ? 'listening' : 'error');
       };
 
       recognition.onresult = (event) => {
         let transcript = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript + ' ';
+          if (event.results[i].isFinal) {
+            transcript += event.results[i][0].transcript + ' ';
+          }
         }
 
-        finalTranscript += transcript;
-        transcriptEl.value = finalTranscript.trim();
+        if (transcript) {
+          finalTranscript += transcript;
+          transcriptEl.value = finalTranscript.trim();
+        }
       };
 
       return true;
@@ -348,6 +364,7 @@
       if (!recognition) {
         if (!initRecognition()) return;
       }
+      shouldRestart = true;
       try {
         recognition.start();
       } catch (e) {
@@ -356,6 +373,7 @@
     });
 
     stopBtn.addEventListener('click', () => {
+      shouldRestart = false;
       if (recognition) {
         recognition.stop();
       }
