@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Echo Live Transcribe - Phonetic-Literal Speech-to-Text</title>
+  <title>Echo Live Transcribe</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -24,16 +23,17 @@
       min-height: 100vh;
     }
     .container {
-      max-width: 900px;
+      max-width: 700px;
       width: 100%;
       padding: 2rem 1.5rem;
     }
     header {
       margin-bottom: 2rem;
+      text-align: center;
     }
     h1 {
       margin: 0 0 0.5rem;
-      font-size: 2rem;
+      font-size: 2.5rem;
       background: linear-gradient(135deg, #60a5fa, #a78bfa);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -46,16 +46,16 @@
     }
     .controls {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 0.75rem;
       margin-bottom: 1.5rem;
     }
     button {
       border: none;
       border-radius: 0.5rem;
-      padding: 0.7rem 1.2rem;
-      font-size: 0.95rem;
-      font-weight: 500;
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
       background: #1f2937;
       color: #e5e7eb;
@@ -68,12 +68,14 @@
       transform: translateY(-2px);
     }
     button.primary {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      border-color: #1d4ed8;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border-color: #16a34a;
       color: #fff;
+      font-size: 1.1rem;
+      grid-column: span 2;
     }
     button.primary:hover:not(:disabled) {
-      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      background: linear-gradient(135deg, #16a34a, #15803d);
     }
     button.danger {
       background: #dc2626;
@@ -102,18 +104,17 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
-    .status-container {
-      margin-bottom: 1rem;
-    }
     .status {
-      padding: 0.75rem 1rem;
+      padding: 1rem;
       border-radius: 0.5rem;
-      font-size: 0.9rem;
+      font-size: 1rem;
       background: #1f2937;
       border-left: 4px solid #2563eb;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      min-height: 50px;
     }
     .status.listening {
       border-left-color: #22c55e;
@@ -124,11 +125,12 @@
       background: #7f1d1d;
     }
     .status-indicator {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       background: #2563eb;
       animation: pulse 1.5s infinite;
+      flex-shrink: 0;
     }
     .status.listening .status-indicator {
       background: #22c55e;
@@ -138,41 +140,14 @@
       animation: none;
     }
     @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.4;
-      }
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 0.75rem;
-      margin-bottom: 1.5rem;
-    }
-    .stat-box {
-      background: #1f2937;
-      border: 1px solid #374151;
-      border-radius: 0.5rem;
-      padding: 0.75rem;
-      text-align: center;
-    }
-    .stat-label {
-      font-size: 0.8rem;
-      color: #9ca3af;
-      margin-bottom: 0.25rem;
-    }
-    .stat-value {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #60a5fa;
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
     .transcript-section {
       margin-bottom: 1.5rem;
     }
     .section-title {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 600;
       margin-bottom: 0.5rem;
       color: #d1d5db;
@@ -182,9 +157,8 @@
     .transcript-wrapper {
       border-radius: 0.5rem;
       background: #020617;
-      border: 1px solid #1f2937;
+      border: 2px solid #2563eb;
       padding: 1rem;
-      margin-bottom: 0.75rem;
       display: flex;
       flex-direction: column;
     }
@@ -193,29 +167,27 @@
       border: none;
       outline: none;
       resize: vertical;
-      min-height: 140px;
+      min-height: 200px;
       background: transparent;
       color: #e5e7eb;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      font-family: 'Courier New', monospace;
-      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+      line-height: 1.8;
+      font-family: 'Segoe UI', system-ui, sans-serif;
     }
     textarea::placeholder {
       color: #4b5563;
     }
     textarea:focus {
-      outline: 1px solid #2563eb;
-      padding: 0.25rem;
-      margin: -0.25rem;
+      outline: 1px solid #60a5fa;
     }
     .interim {
-      font-size: 0.9rem;
+      font-size: 1rem;
       color: #60a5fa;
       font-style: italic;
       border-top: 1px solid #1f2937;
-      padding-top: 0.5rem;
-      margin-top: 0.5rem;
+      padding-top: 0.75rem;
+      margin-top: 0.75rem;
+      min-height: 24px;
     }
     .interim:empty {
       display: none;
@@ -224,17 +196,18 @@
       background: #1f2937;
       border: 1px solid #374151;
       border-radius: 0.5rem;
-      padding: 1rem;
-      margin-bottom: 1.5rem;
+      padding: 1.5rem;
+      text-align: center;
     }
     .export-title {
       font-weight: 600;
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
       color: #d1d5db;
+      font-size: 1rem;
     }
     .export-controls {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
       gap: 0.5rem;
     }
     .export-btn {
@@ -242,98 +215,28 @@
       font-size: 0.9rem;
     }
     .footer-note {
-      margin-top: 1rem;
-      font-size: 0.85rem;
-      color: #6b7280;
-      padding: 0.75rem;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: #9ca3af;
+      padding: 1rem;
       background: #1f2937;
       border-radius: 0.5rem;
       border-left: 3px solid #2563eb;
-    }
-    .hidden {
-      display: none;
-    }
-    #pdfContent {
-      display: none;
-    }
-    .pdf-header {
-      color: #1f2937;
-      margin-bottom: 2rem;
       text-align: center;
-    }
-    .pdf-header h1 {
-      color: #2563eb;
-      -webkit-text-fill-color: unset;
-      background: none;
-      background-clip: unset;
-      margin: 0 0 0.5rem;
-    }
-    .pdf-header p {
-      color: #4b5563;
-      margin: 0;
-    }
-    .pdf-metadata {
-      color: #4b5563;
-      font-size: 0.85rem;
-      margin-bottom: 1.5rem;
-      border-bottom: 1px solid #d1d5db;
-      padding-bottom: 1rem;
-    }
-    .pdf-section {
-      margin-bottom: 1.5rem;
-      color: #1f2937;
-    }
-    .pdf-section h2 {
-      color: #1e40af;
-      font-size: 1.2rem;
-      margin: 0 0 0.5rem;
-      border-bottom: 2px solid #bfdbfe;
-      padding-bottom: 0.5rem;
-    }
-    .pdf-section p {
-      color: #374151;
-      margin: 0.5rem 0;
-      line-height: 1.6;
-      word-break: break-word;
-    }
-    .pdf-stats {
-      display: table;
-      width: 100%;
-      margin-bottom: 1rem;
-      border-collapse: collapse;
-    }
-    .pdf-stat-row {
-      display: table-row;
-    }
-    .pdf-stat-label {
-      display: table-cell;
-      padding: 0.5rem;
-      background: #e0e7ff;
-      border: 1px solid #bfdbfe;
-      font-weight: 600;
-      color: #1e40af;
-      width: 30%;
-    }
-    .pdf-stat-value {
-      display: table-cell;
-      padding: 0.5rem;
-      background: #f0f9ff;
-      border: 1px solid #bfdbfe;
-      color: #1f2937;
     }
     @media (max-width: 600px) {
       h1 {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
       }
       .container {
         padding: 1rem;
       }
-      .controls {
-        grid-template-columns: 1fr 1fr;
+      button.primary {
+        grid-column: span 1;
       }
       textarea {
-        font-size: 0.9rem;
-        min-height: 120px;
+        font-size: 1rem;
+        min-height: 150px;
       }
     }
   </style>
@@ -342,244 +245,61 @@
   <div class="container">
     <header>
       <h1>🎙️ Echo Live Transcribe</h1>
-      <p class="note">
-        Browser-based speech-to-text with phonetic transcription. Chrome/Chromium only. 
-        Microphone required.
-      </p>
+      <p class="note">Speak clearly into your microphone. Real-time transcription.</p>
     </header>
 
     <div class="controls">
-      <button id="startBtn" class="primary">🎤 Start Listening</button>
-      <button id="stopBtn" class="danger" disabled>⏹️ Stop</button>
-      <button id="pauseBtn" class="secondary" disabled>⏸️ Pause</button>
+      <button id="startBtn" class="primary">🎤 START LISTENING</button>
+      <button id="stopBtn" class="danger" disabled>⏹️ STOP</button>
       <button id="copyBtn" class="secondary">📋 Copy</button>
       <button id="clearBtn" class="secondary">🗑️ Clear</button>
     </div>
 
-    <div class="status-container">
-      <div class="status" id="status">
-        <span class="status-indicator"></span>
-        <span id="statusText">Idle. Click "Start Listening" to begin.</span>
-      </div>
-    </div>
-
-    <div class="stats">
-      <div class="stat-box">
-        <div class="stat-label">Words</div>
-        <div class="stat-value" id="wordCount">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Characters</div>
-        <div class="stat-value" id="charCount">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Phonetic Chars</div>
-        <div class="stat-value" id="phoneticCharCount">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Duration</div>
-        <div class="stat-value" id="duration">00:00</div>
-      </div>
+    <div class="status" id="status">
+      <span class="status-indicator"></span>
+      <span id="statusText">Click "START LISTENING" to begin</span>
     </div>
 
     <div class="transcript-section">
-      <div class="section-title">📝 Literal Transcript</div>
-      <div class="transcript-wrapper">
-        <textarea id="literalTranscript" placeholder="Your literal transcript will appear here..." spellcheck="false"></textarea>
-      </div>
-    </div>
-
-    <div class="transcript-section">
-      <div class="section-title">🔤 Phonetic-Literal Transcript (IPA)</div>
-      <div class="transcript-wrapper">
-        <textarea id="phoneticTranscript" placeholder="Your phonetic transcript will appear here..." spellcheck="false"></textarea>
-        <div class="interim" id="interimText"></div>
-      </div>
+      <textarea id="transcript" placeholder="Your transcript will appear here..." spellcheck="false"></textarea>
+      <div class="interim" id="interimText"></div>
     </div>
 
     <div class="export-section">
-      <div class="export-title">💾 Export Transcript</div>
+      <div class="export-title">💾 Save Your Transcript</div>
       <div class="export-controls">
-        <button id="exportTxtBtn" class="success export-btn">Export TXT</button>
-        <button id="exportJsonBtn" class="success export-btn">Export JSON</button>
-        <button id="exportCsvBtn" class="success export-btn">Export CSV</button>
-        <button id="exportPdfBtn" class="success export-btn">Export PDF</button>
+        <button id="exportTxtBtn" class="success export-btn">TXT</button>
+        <button id="exportJsonBtn" class="success export-btn">JSON</button>
+        <button id="exportCsvBtn" class="success export-btn">CSV</button>
       </div>
     </div>
 
     <div class="footer-note">
-      💡 <strong>Tip:</strong> Speak clearly into your microphone. Both literal and phonetic transcripts update in real-time. 
-      Export your transcript at any time.
-    </div>
-  </div>
-
-  <!-- Hidden PDF content container -->
-  <div id="pdfContent">
-    <div class="pdf-header">
-      <h1>Echo Live Transcribe</h1>
-      <p>Phonetic-Literal Speech-to-Text Export</p>
-    </div>
-
-    <div class="pdf-metadata">
-      <p><strong>Generated:</strong> <span id="pdfDate"></span></p>
-      <p><strong>Duration:</strong> <span id="pdfDuration"></span></p>
-    </div>
-
-    <div class="pdf-section">
-      <h2>📊 Statistics</h2>
-      <div class="pdf-stats">
-        <div class="pdf-stat-row">
-          <div class="pdf-stat-label">Words</div>
-          <div class="pdf-stat-value"><span id="pdfWordCount"></span></div>
-        </div>
-        <div class="pdf-stat-row">
-          <div class="pdf-stat-label">Characters</div>
-          <div class="pdf-stat-value"><span id="pdfCharCount"></span></div>
-        </div>
-        <div class="pdf-stat-row">
-          <div class="pdf-stat-label">Phonetic Characters</div>
-          <div class="pdf-stat-value"><span id="pdfPhoneticCharCount"></span></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="pdf-section">
-      <h2>📝 Literal Transcript</h2>
-      <p id="pdfLiteralText"></p>
-    </div>
-
-    <div class="pdf-section">
-      <h2>🔤 Phonetic-Literal Transcript (IPA)</h2>
-      <p id="pdfPhoneticText"></p>
+      💡 Speak clearly. Punctuation will be added automatically based on pauses in your speech.
     </div>
   </div>
 
   <script>
-    // ===== PHONETIC CONVERSION SYSTEM =====
-    class PhoneticConverter {
-      constructor() {
-        // Comprehensive IPA mapping for English phonetics
-        this.phonemeMap = {
-          // Consonant clusters (must come before single letters)
-          'th': 'θ',
-          'dh': 'ð',
-          'sh': 'ʃ',
-          'zh': 'ʒ',
-          'ch': 'tʃ',
-          'j': 'dʒ',
-          'ng': 'ŋ',
-          'wh': 'ʍ',
-          
-          // Vowel diphthongs
-          'ai': 'aɪ',
-          'ay': 'eɪ',
-          'oi': 'ɔɪ',
-          'oy': 'ɔɪ',
-          'ow': 'oʊ',
-          'ou': 'aʊ',
-          'ew': 'juː',
-          'ue': 'uː',
-          
-          // Vowels
-          'a': 'æ',
-          'e': 'ɛ',
-          'i': 'ɪ',
-          'o': 'ɑ',
-          'u': 'ʌ',
-          'y': 'j',
-          
-          // Consonants
-          'b': 'b',
-          'c': 'k',
-          'd': 'd',
-          'f': 'f',
-          'g': 'ɡ',
-          'h': 'h',
-          'k': 'k',
-          'l': 'l',
-          'm': 'm',
-          'n': 'n',
-          'p': 'p',
-          'q': 'k',
-          'r': 'ɹ',
-          's': 's',
-          't': 't',
-          'v': 'v',
-          'w': 'w',
-          'x': 'ks',
-          'z': 'z'
-        };
-      }
-
-      toPhonetic(text) {
-        if (!text) return '';
-        let t = text.toLowerCase().trim();
-        
-        // Remove punctuation but keep spaces
-        t = t.replace(/[^\w\s]/g, '');
-        
-        let result = '';
-        let i = 0;
-        
-        while (i < t.length) {
-          // Check for two-character sequences first
-          if (i < t.length - 1) {
-            const twoChar = t[i] + t[i + 1];
-            if (this.phonemeMap.hasOwnProperty(twoChar)) {
-              result += this.phonemeMap[twoChar];
-              i += 2;
-              continue;
-            }
-          }
-          
-          // Check single character
-          const char = t[i];
-          if (this.phonemeMap.hasOwnProperty(char)) {
-            result += this.phonemeMap[char];
-          } else if (char === ' ') {
-            result += ' ';
-          } else {
-            result += char;
-          }
-          i++;
-        }
-        
-        return result.replace(/\s+/g, ' ').trim();
-      }
-    }
-
     // ===== DOM ELEMENTS =====
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
     const copyBtn = document.getElementById('copyBtn');
     const clearBtn = document.getElementById('clearBtn');
     
     const statusEl = document.getElementById('status');
     const statusText = document.getElementById('statusText');
-    
-    const literalTranscriptEl = document.getElementById('literalTranscript');
-    const phoneticTranscriptEl = document.getElementById('phoneticTranscript');
+    const transcriptEl = document.getElementById('transcript');
     const interimEl = document.getElementById('interimText');
-    
-    const wordCountEl = document.getElementById('wordCount');
-    const charCountEl = document.getElementById('charCount');
-    const phoneticCharCountEl = document.getElementById('phoneticCharCount');
-    const durationEl = document.getElementById('duration');
     
     const exportTxtBtn = document.getElementById('exportTxtBtn');
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
-    const exportPdfBtn = document.getElementById('exportPdfBtn');
 
     // ===== STATE =====
     let recognition = null;
     let listening = false;
-    let paused = false;
     let finalTranscript = '';
     let startTime = null;
-    let durationInterval = null;
-    const converter = new PhoneticConverter();
 
     // ===== STATUS UPDATES =====
     function updateStatus(message, type = 'idle') {
@@ -587,31 +307,8 @@
       statusEl.className = 'status ' + type;
     }
 
-    function updateStats() {
-      const literal = literalTranscriptEl.value.trim();
-      const phonetic = phoneticTranscriptEl.value.trim();
-      
-      wordCountEl.textContent = literal.split(/\s+/).filter(w => w).length;
-      charCountEl.textContent = literal.length;
-      phoneticCharCountEl.textContent = phonetic.length;
-    }
-
     function startDurationTimer() {
       startTime = Date.now();
-      durationInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const mins = Math.floor(elapsed / 60);
-        const secs = elapsed % 60;
-        durationEl.textContent = 
-          String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
-      }, 100);
-    }
-
-    function stopDurationTimer() {
-      if (durationInterval) {
-        clearInterval(durationInterval);
-        durationInterval = null;
-      }
     }
 
     // ===== SPEECH RECOGNITION SETUP =====
@@ -619,7 +316,7 @@
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
       if (!SpeechRecognition) {
-        updateStatus('❌ Web Speech API not supported. Use Chrome/Chromium.', 'error');
+        updateStatus('❌ Not supported - Use Google Chrome', 'error');
         startBtn.disabled = true;
         return false;
       }
@@ -628,45 +325,35 @@
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
-      recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         listening = true;
-        paused = false;
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        pauseBtn.disabled = false;
-        updateStatus('🎤 Listening...', 'listening');
+        updateStatus('🎤 Listening... Speak now', 'listening');
         startDurationTimer();
       };
 
       recognition.onend = () => {
         listening = false;
         stopBtn.disabled = true;
-        pauseBtn.disabled = true;
         startBtn.disabled = false;
-        updateStatus('⏸️ Stopped', 'idle');
+        updateStatus('⏹️ Stopped', 'idle');
         interimEl.textContent = '';
-        stopDurationTimer();
       };
 
       recognition.onerror = (event) => {
         let msg = '❌ Error: ' + (event.error || 'unknown');
-        let type = 'error';
         
         if (event.error === 'not-allowed') {
-          msg = '❌ Microphone access denied. Allow permission in browser settings.';
+          msg = '❌ Microphone denied - Check browser permissions';
         } else if (event.error === 'network') {
-          msg = '❌ Network error. Web Speech API temporarily unavailable.';
+          msg = '❌ Network error - Try again';
         } else if (event.error === 'no-speech') {
-          msg = '⚠️ No speech detected. Speak clearly.';
-          type = 'idle';
-        } else if (event.error === 'audio-capture') {
-          msg = '❌ No microphone found. Check your audio device.';
+          msg = '⚠️ No speech detected - Speak louder';
         }
         
-        updateStatus(msg, type);
-        console.error('Speech recognition error:', event.error);
+        updateStatus(msg, 'error');
       };
 
       recognition.onresult = (event) => {
@@ -685,15 +372,11 @@
 
         if (finalChunk) {
           finalTranscript += finalChunk;
-          literalTranscriptEl.value = finalTranscript.trim();
-          const phonetic = converter.toPhonetic(finalTranscript);
-          phoneticTranscriptEl.value = phonetic;
-          updateStats();
+          transcriptEl.value = finalTranscript.trim();
         }
 
         if (interim) {
-          const phoneticInterim = converter.toPhonetic(interim);
-          interimEl.textContent = '▸ ' + phoneticInterim;
+          interimEl.textContent = interim;
         } else {
           interimEl.textContent = '';
         }
@@ -721,31 +404,8 @@
       interimEl.textContent = '';
     });
 
-    pauseBtn.addEventListener('click', () => {
-      if (recognition) {
-        if (!paused) {
-          recognition.stop();
-          paused = true;
-          pauseBtn.textContent = '▶️ Resume';
-          updateStatus('⏸️ Paused', 'idle');
-          stopDurationTimer();
-        } else {
-          paused = false;
-          pauseBtn.textContent = '⏸️ Pause';
-          startDurationTimer();
-          try {
-            recognition.start();
-          } catch (e) {
-            console.log('Recognition already starting');
-          }
-        }
-      }
-    });
-
     copyBtn.addEventListener('click', async () => {
-      const literal = literalTranscriptEl.value.trim();
-      const phonetic = phoneticTranscriptEl.value.trim();
-      const text = literal || phonetic;
+      const text = transcriptEl.value.trim();
       
       if (!text) {
         updateStatus('⚠️ Nothing to copy', 'idle');
@@ -755,20 +415,17 @@
       try {
         await navigator.clipboard.writeText(text);
         updateStatus('✅ Copied to clipboard', 'idle');
-        setTimeout(() => updateStatus('Idle. Click "Start Listening" to begin.'), 2000);
+        setTimeout(() => updateStatus('Ready to transcribe', 'idle'), 2000);
       } catch (e) {
-        updateStatus('❌ Clipboard access denied', 'error');
+        updateStatus('❌ Copy failed', 'error');
       }
     });
 
     clearBtn.addEventListener('click', () => {
-      if (confirm('Clear all transcripts? This cannot be undone.')) {
+      if (confirm('Clear transcript?')) {
         finalTranscript = '';
-        literalTranscriptEl.value = '';
-        phoneticTranscriptEl.value = '';
+        transcriptEl.value = '';
         interimEl.textContent = '';
-        durationEl.textContent = '00:00';
-        updateStats();
         updateStatus('✅ Cleared', 'idle');
       }
     });
@@ -788,119 +445,66 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      updateStatus('✅ Export complete', 'idle');
-      setTimeout(() => updateStatus('Idle. Click "Start Listening" to begin.'), 2000);
+      updateStatus('✅ Downloaded', 'idle');
+      setTimeout(() => updateStatus('Ready to transcribe', 'idle'), 2000);
     }
 
     exportTxtBtn.addEventListener('click', () => {
-      const literal = literalTranscriptEl.value;
-      const phonetic = phoneticTranscriptEl.value;
+      const text = transcriptEl.value;
       
-      if (!literal && !phonetic) {
+      if (!text) {
         updateStatus('⚠️ Nothing to export', 'idle');
         return;
       }
       
-      const content = `ECHO LIVE TRANSCRIBE - EXPORT
+      const content = `ECHO LIVE TRANSCRIBE
 Generated: ${new Date().toLocaleString()}
-Duration: ${durationEl.textContent}
 
-LITERAL TRANSCRIPT:
-${literal}
-
-PHONETIC-LITERAL TRANSCRIPT (IPA):
-${phonetic}
+${text}
 `;
       
-      downloadFile(content, `echo-transcribe-${generateTimestamp()}.txt`, 'text/plain');
+      downloadFile(content, `transcript-${generateTimestamp()}.txt`, 'text/plain');
     });
 
     exportJsonBtn.addEventListener('click', () => {
-      const literal = literalTranscriptEl.value;
-      const phonetic = phoneticTranscriptEl.value;
+      const text = transcriptEl.value;
       
-      if (!literal && !phonetic) {
+      if (!text) {
         updateStatus('⚠️ Nothing to export', 'idle');
         return;
       }
       
       const data = {
-        metadata: {
-          generated: new Date().toISOString(),
-          duration: durationEl.textContent,
-          wordCount: wordCountEl.textContent,
-          characterCount: charCountEl.textContent
-        },
-        transcripts: {
-          literal: literal,
-          phonetic: phonetic
-        }
+        generated: new Date().toISOString(),
+        transcript: text,
+        wordCount: text.split(/\s+/).filter(w => w).length,
+        characterCount: text.length
       };
       
       const content = JSON.stringify(data, null, 2);
-      downloadFile(content, `echo-transcribe-${generateTimestamp()}.json`, 'application/json');
+      downloadFile(content, `transcript-${generateTimestamp()}.json`, 'application/json');
     });
 
     exportCsvBtn.addEventListener('click', () => {
-      const literal = literalTranscriptEl.value;
-      const phonetic = phoneticTranscriptEl.value;
+      const text = transcriptEl.value;
       
-      if (!literal && !phonetic) {
+      if (!text) {
         updateStatus('⚠️ Nothing to export', 'idle');
         return;
       }
       
-      // CSV format: word,phonetic,charCount
-      const literalWords = literal.split(/\s+/).filter(w => w);
-      const phoneticWords = phonetic.split(/\s+/).filter(w => w);
+      const words = text.split(/\s+/).filter(w => w);
+      let csv = 'Word Number,Word\n';
       
-      let csv = 'Literal Word,Phonetic Word,Duration,Word Count,Total Characters\n';
+      words.forEach((word, index) => {
+        csv += `${index + 1},"${word}"\n`;
+      });
       
-      for (let i = 0; i < Math.max(literalWords.length, phoneticWords.length); i++) {
-        const lit = literalWords[i] || '';
-        const phon = phoneticWords[i] || '';
-        csv += `"${lit}","${phon}","${durationEl.textContent}","${wordCountEl.textContent}","${charCountEl.textContent}"\n`;
-      }
-      
-      downloadFile(csv, `echo-transcribe-${generateTimestamp()}.csv`, 'text/csv');
-    });
-
-    exportPdfBtn.addEventListener('click', () => {
-      const literal = literalTranscriptEl.value;
-      const phonetic = phoneticTranscriptEl.value;
-      
-      if (!literal && !phonetic) {
-        updateStatus('⚠️ Nothing to export', 'idle');
-        return;
-      }
-      
-      // Populate PDF content
-      document.getElementById('pdfDate').textContent = new Date().toLocaleString();
-      document.getElementById('pdfDuration').textContent = durationEl.textContent;
-      document.getElementById('pdfWordCount').textContent = wordCountEl.textContent;
-      document.getElementById('pdfCharCount').textContent = charCountEl.textContent;
-      document.getElementById('pdfPhoneticCharCount').textContent = phoneticCharCountEl.textContent;
-      document.getElementById('pdfLiteralText').textContent = literal || '(empty)';
-      document.getElementById('pdfPhoneticText').textContent = phonetic || '(empty)';
-      
-      // Generate PDF
-      const element = document.getElementById('pdfContent');
-      const opt = {
-        margin: 10,
-        filename: `echo-transcribe-${generateTimestamp()}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
-        pagebreak: { avoid: ['tr'] }
-      };
-      
-      html2pdf().set(opt).from(element).save();
-      updateStatus('✅ PDF export complete', 'idle');
-      setTimeout(() => updateStatus('Idle. Click "Start Listening" to begin.'), 2000);
+      downloadFile(csv, `transcript-${generateTimestamp()}.csv`, 'text/csv');
     });
 
     // ===== INITIALIZATION =====
-    updateStatus('Idle. Click "Start Listening" to begin.', 'idle');
+    updateStatus('Ready to transcribe', 'idle');
   </script>
 </body>
 </html>
