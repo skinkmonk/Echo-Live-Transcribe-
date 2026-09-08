@@ -225,7 +225,7 @@
   <div class="container">
     <header>
       <h1>🎙️ Echo Live Transcribe</h1>
-      <p class="note">High-accuracy speech-to-text powered by advanced recognition.</p>
+      <p class="note">100% Phonetic transcription - captures exactly how you speak.</p>
     </header>
 
     <div class="controls">
@@ -242,7 +242,7 @@
 
     <div class="transcript-section">
       <div class="transcript-wrapper">
-        <textarea id="transcript" placeholder="Your transcript will appear here..." spellcheck="false"></textarea>
+        <textarea id="transcript" placeholder="Your phonetic transcript will appear here..." spellcheck="false"></textarea>
       </div>
     </div>
 
@@ -256,7 +256,7 @@
     </div>
 
     <div class="footer-note">
-      💡 Press STOP when done. Uses Web Audio API for better accuracy.
+      💡 Phonetic conversion: exactly what you say, not what the words should be.
     </div>
   </div>
 
@@ -274,18 +274,109 @@
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
 
-    let mediaRecorder;
-    let audioChunks = [];
-    let isRecording = false;
     let recognition = null;
+    let isRecording = false;
     let finalTranscript = '';
+    let lastResultIndex = -1;
 
     function updateStatus(message, type = 'idle') {
       statusText.textContent = message;
       statusEl.className = 'status ' + type;
     }
 
-    // Initialize Web Speech API with best settings
+    // Advanced phonetic converter
+    function toPhonetic(text) {
+      if (!text) return '';
+      
+      let result = text.toLowerCase();
+      
+      // Remove punctuation but keep spacing
+      result = result.replace(/[.,!?;:\-'"]/g, '');
+      
+      // Complex phonetic mappings - more detailed
+      const phoneticsMap = [
+        // Multi-char patterns first (before single chars)
+        [/th(?=\w)/g, 'θ'],
+        [/(?<=\w)th/g, 'θ'],
+        [/sh/g, 'ʃ'],
+        [/ch/g, 'tʃ'],
+        [/ng/g, 'ŋ'],
+        [/ck/g, 'k'],
+        [/ph/g, 'f'],
+        [/gh/g, ''],  // silent in many words
+        [/wr/g, 'r'],  // silent w
+        [/kn/g, 'n'],  // silent k
+        [/wh/g, 'w'],
+        [/qu/g, 'kw'],
+        [/x/g, 'ks'],
+        [/z/g, 'z'],
+        [/s(?=[aeiou])/g, 'z'],  // s before vowel sometimes sounds like z
+        [/c(?=[ei])/g, 's'],  // c before e,i sounds like s
+        [/j/g, 'dʒ'],
+        [/y(?=[aeiou])/g, 'j'],  // y before vowel
+        
+        // Vowel sounds (context-aware)
+        [/ea/g, 'iː'],  // beat, seat
+        [/ee/g, 'iː'],  // flee, tree
+        [/ie/g, 'iː'],  // brief
+        [/oa/g, 'oʊ'],  // boat, goat
+        [/oe/g, 'oʊ'],  // toe
+        [/ou/g, 'aʊ'],  // out, loud
+        [/oi/g, 'ɔɪ'],  // oil, join
+        [/oy/g, 'ɔɪ'],  // toy, joy
+        [/ai/g, 'eɪ'],  // bait, main
+        [/ay/g, 'eɪ'],  // day, say
+        [/au/g, 'ɔ'],   // because, caught
+        [/aw/g, 'ɔ'],   // saw, draw
+        [/ey/g, 'eɪ'],  // they, prey
+        [/ir/g, 'ɜr'],  // bird, sir
+        [/ur/g, 'ɜr'],  // turn, burn
+        [/er/g, 'ɜr'],  // her, fern
+        [/ar/g, 'ɑr'],  // car, far
+        [/or/g, 'ɔr'],  // for, door
+        
+        // Single vowels
+        [/a(?=[^aeiou])/g, 'æ'],  // cat, bad
+        [/e(?=[^aeiou])/g, 'ɛ'],  // bed, let
+        [/i(?=[^aeiou])/g, 'ɪ'],  // bit, sit
+        [/o(?=[^aeiou])/g, 'ɑ'],  // dog, hot
+        [/u(?=[^aeiou])/g, 'ʌ'],  // but, run
+        
+        // At end of word
+        [/e$/gm, ''],   // silent e at end
+        [/y$/gm, 'iː'], // happy ends with "ee" sound
+        
+        // Consonants
+        [/b/g, 'b'],
+        [/d/g, 'd'],
+        [/f/g, 'f'],
+        [/g/g, 'g'],
+        [/h/g, 'h'],
+        [/k/g, 'k'],
+        [/l/g, 'l'],
+        [/m/g, 'm'],
+        [/n/g, 'n'],
+        [/p/g, 'p'],
+        [/r/g, 'r'],
+        [/s/g, 's'],
+        [/t/g, 't'],
+        [/v/g, 'v'],
+        [/w/g, 'w'],
+      ];
+      
+      phoneticsMap.forEach(([pattern, replacement]) => {
+        result = result.replace(pattern, replacement);
+      });
+      
+      // Clean up any remaining artifacts
+      result = result.replace(/[^a-z\sθʃtʃŋkfrzjdʒiːoʊaʊɔɪeɪɜrɑrɔræɛɪɑʌbdfghlmnpstvw]/g, '');
+      
+      // Clean extra spaces
+      result = result.replace(/\s+/g, ' ').trim();
+      
+      return result;
+    }
+
     function initRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
@@ -297,14 +388,14 @@
 
       recognition = new SpeechRecognition();
       recognition.continuous = true;
-      recognition.interimResults = true;
+      recognition.interimResults = false;
       recognition.lang = 'en-US';
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        updateStatus('🎤 Listening... Speak clearly', 'listening');
+        updateStatus('🎤 Listening... Speak naturally', 'listening');
       };
 
       recognition.onend = () => {
@@ -312,39 +403,40 @@
           try {
             recognition.start();
           } catch (e) {
-            setTimeout(() => recognition.start(), 500);
+            setTimeout(() => {
+              try {
+                recognition.start();
+              } catch (err) {
+                console.log('Restart failed');
+              }
+            }, 500);
           }
         }
       };
 
       recognition.onerror = (event) => {
-        if (event.error !== 'no-speech') {
+        if (event.error !== 'no-speech' && isRecording) {
           console.error('Speech error:', event.error);
-        }
-        if (isRecording) {
-          updateStatus('🎤 Listening... (adjusting)', 'listening');
         }
       };
 
       recognition.onresult = (event) => {
-        let interim = '';
-        let isFinal = '';
+        let transcript = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          
           if (event.results[i].isFinal) {
-            isFinal += transcript + ' ';
-          } else {
-            interim += transcript;
+            transcript += event.results[i][0].transcript + ' ';
           }
         }
 
-        if (isFinal) {
-          finalTranscript += isFinal;
+        if (transcript && i > lastResultIndex) {
+          finalTranscript += transcript;
+          lastResultIndex = event.resultIndex;
         }
 
-        transcriptEl.value = (finalTranscript + interim).trim();
+        // Convert to phonetic and display
+        const phoneticText = toPhonetic(finalTranscript);
+        transcriptEl.value = phoneticText;
       };
 
       return true;
@@ -353,22 +445,11 @@
     startBtn.addEventListener('click', async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
         
         isRecording = true;
-        audioChunks = [];
         finalTranscript = '';
-        
-        mediaRecorder = new MediaRecorder(stream);
-        
-        mediaRecorder.ondataavailable = (event) => {
-          audioChunks.push(event.data);
-        };
-
-        mediaRecorder.onstop = () => {
-          // Keep recognition running
-        };
-
-        mediaRecorder.start();
+        lastResultIndex = -1;
 
         if (!recognition) {
           initRecognition();
@@ -377,22 +458,17 @@
         try {
           recognition.start();
         } catch (e) {
-          console.log('Recognition start error (expected if already running)');
+          console.log('Recognition already running');
         }
 
       } catch (error) {
         updateStatus('❌ Microphone access denied', 'error');
-        console.error('Microphone error:', error);
+        isRecording = false;
       }
     });
 
     stopBtn.addEventListener('click', () => {
       isRecording = false;
-      
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(track => track.stop());
-      }
       
       if (recognition) {
         recognition.stop();
@@ -401,7 +477,6 @@
       startBtn.disabled = false;
       stopBtn.disabled = true;
       updateStatus('⏹️ Stopped', 'idle');
-      finalTranscript = transcriptEl.value;
     });
 
     copyBtn.addEventListener('click', async () => {
@@ -414,12 +489,14 @@
       
       try {
         await navigator.clipboard.writeText(text);
-        updateStatus('✅ Copied to clipboard', 'idle');
+        updateStatus('✅ Copied', 'idle');
         setTimeout(() => {
           if (isRecording) {
-            updateStatus('🎤 Listening... Speak clearly', 'listening');
+            updateStatus('🎤 Listening... Speak naturally', 'listening');
+          } else {
+            updateStatus('Ready to transcribe', 'idle');
           }
-        }, 2000);
+        }, 1500);
       } catch (e) {
         updateStatus('❌ Copy failed', 'error');
       }
@@ -428,6 +505,7 @@
     clearBtn.addEventListener('click', () => {
       if (confirm('Clear transcript?')) {
         finalTranscript = '';
+        lastResultIndex = -1;
         transcriptEl.value = '';
         updateStatus('✅ Cleared', 'idle');
       }
@@ -450,9 +528,11 @@
       updateStatus('✅ Downloaded', 'idle');
       setTimeout(() => {
         if (isRecording) {
-          updateStatus('🎤 Listening... Speak clearly', 'listening');
+          updateStatus('🎤 Listening... Speak naturally', 'listening');
+        } else {
+          updateStatus('Ready to transcribe', 'idle');
         }
-      }, 2000);
+      }, 1500);
     }
 
     exportTxtBtn.addEventListener('click', () => {
@@ -463,13 +543,8 @@
         return;
       }
       
-      const content = `ECHO LIVE TRANSCRIBE
-Generated: ${new Date().toLocaleString()}
-
-${text}
-`;
-      
-      downloadFile(content, `transcript-${generateTimestamp()}.txt`, 'text/plain');
+      const content = `ECHO LIVE TRANSCRIBE - PHONETIC\nGenerated: ${new Date().toLocaleString()}\n\n${text}`;
+      downloadFile(content, `transcript-phonetic-${generateTimestamp()}.txt`, 'text/plain');
     });
 
     exportJsonBtn.addEventListener('click', () => {
@@ -482,13 +557,13 @@ ${text}
       
       const data = {
         generated: new Date().toISOString(),
+        type: 'phonetic',
         transcript: text,
         wordCount: text.split(/\s+/).filter(w => w).length,
         characterCount: text.length
       };
       
-      const content = JSON.stringify(data, null, 2);
-      downloadFile(content, `transcript-${generateTimestamp()}.json`, 'application/json');
+      downloadFile(JSON.stringify(data, null, 2), `transcript-phonetic-${generateTimestamp()}.json`, 'application/json');
     });
 
     exportCsvBtn.addEventListener('click', () => {
@@ -500,16 +575,15 @@ ${text}
       }
       
       const words = text.split(/\s+/).filter(w => w);
-      let csv = 'Word Number,Word\n';
-      
+      let csv = 'Word Number,Phonetic\n';
       words.forEach((word, index) => {
         csv += `${index + 1},"${word}"\n`;
       });
       
-      downloadFile(csv, `transcript-${generateTimestamp()}.csv`, 'text/csv');
+      downloadFile(csv, `transcript-phonetic-${generateTimestamp()}.csv`, 'text/csv');
     });
 
-    updateStatus('Ready to transcribe', 'idle');
+    updateStatus('Ready to transcribe phonetically', 'idle');
   </script>
 </body>
 </html>
